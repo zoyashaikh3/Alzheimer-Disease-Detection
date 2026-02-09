@@ -95,10 +95,6 @@ You can install them using:
 
 pip install -r requirements.txt
 
-🧑‍💻 Contributors
-
-👤 Shaikh Mohd Talha
-📍 Project: Alzheimer’s MRI Prediction System
 
 🛠️ Future Improvements
 
