@@ -1,0 +1,6 @@
+[build]
+  publish = "synapse-speak-scan-main/dist"
+  command = ""
+
+[build.environment]
+  NODE_VERSION = "18"

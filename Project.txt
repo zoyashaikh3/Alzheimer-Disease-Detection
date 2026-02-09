@@ -1,0 +1,571 @@
+
+1.python -m uvicorn api_server:app --host 127.0.0.1 --port 8010 --reload
+
+2.python -m http.server 5500 --directory "C:\Users\hp\Desktop\SEM5\Alzheimers-DL-Network-master\synapse-speak-scan-main"
+
+3.python -m streamlit run app.py --server.enableCORS false --server.enableXsrfProtection false --server.headless true
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+import streamlit as st
+import torch
+import nibabel as nib
+import numpy as np
+from model.network import Network
+from skimage.transform import resize
+import matplotlib.pyplot as plt
+import tempfile
+import datetime
+import time
+
+# ----------------- MODEL LOAD -----------------
+st.set_page_config(page_title="🧠 Alzheimer's Detection", layout="centered")
+
+st.title("🧠 Alzheimer's MRI Prediction System")
+st.write("Upload your MRI scan (.nii or .nii.gz) and enter patient details to get AI-powered prediction results")
+
+# Model parameters
+input_channels = 1
+input_shape = (200, 200, 150)
+output_size = 2
+classes = ["No Alzheimer's", "Alzheimer's Detected"]
+
+# Load trained model
+@st.cache_resource
+def load_model():
+    model = Network(input_channels, input_shape, output_size)
+    model.load_state_dict(torch.load("alzheimers_model.pth", map_location="cpu"))
+    model.eval()
+    return model
+
+model = load_model()
+
+# ----------------- PATIENT INFO FORM -----------------
+st.markdown("### 🧾 Patient Information")
+col1, col2 = st.columns(2)
+
+with col1:
+    patient_name = st.text_input("👤 Patient Name")
+    patient_age = st.number_input("🎂 Age", min_value=1, max_value=120, step=1)
+
+with col2:
+    patient_contact = st.text_input("📞 Contact Number")
+    patient_date = st.date_input("📅 Date", value=datetime.date.today())
+
+# ----------------- FILE UPLOADER -----------------
+uploaded_file = st.file_uploader("📂 Upload MRI File", type=["nii", "nii.gz"])
+
+# ----------------- PREDICTION -----------------
+if uploaded_file is not None:
+    st.success(f"✅ File uploaded: {uploaded_file.name}")
+
+    if st.button("🔍 Run Prediction"):
+        try:
+            # ----------------- WAIT / LOADING SIMULATION -----------------
+            with st.spinner("⏳ Processing MRI Scan... Please wait"):
+                progress = st.progress(0)
+                for i in range(100):
+                    time.sleep(0.02)  # simulation delay
+                    progress.progress(i + 1)
+
+            # Save uploaded file temporarily
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".nii") as tmp_file:
+                tmp_file.write(uploaded_file.getbuffer())
+                tmp_path = tmp_file.name
+
+            # Load MRI file
+            mri_img = nib.load(tmp_path)
+            mri_data = mri_img.get_fdata()
+
+            # Normalize & resize
+            mri_data = (mri_data - np.min(mri_data)) / (np.max(mri_data) - np.min(mri_data))
+            if mri_data.shape != input_shape:
+                st.warning(f"⚠ MRI shape {mri_data.shape} does not match {input_shape}. Resizing...")
+                mri_data = resize(mri_data, input_shape, anti_aliasing=True)
+
+            # Convert to tensor
+            mri_tensor = torch.tensor(mri_data, dtype=torch.float32).unsqueeze(0).unsqueeze(0)
+
+            # Run prediction
+            with torch.no_grad():
+                output = model(mri_tensor)
+                probs = torch.softmax(output, dim=0).numpy()
+                predicted_class = np.argmax(probs)
+
+            # ----------------- REPORT -----------------
+            st.markdown("## 📋 Prediction Report")
+
+            # Patient info section
+            st.markdown(f"""
+            **👤 Patient Name:** {patient_name if patient_name else "N/A"}  
+            **🎂 Age:** {patient_age if patient_age else "N/A"}  
+            **📞 Contact:** {patient_contact if patient_contact else "N/A"}  
+            **📅 Date:** {patient_date}  
+            """)
+
+            # MRI + Model info
+            st.info(f"**Patient MRI File:** {uploaded_file.name}")
+            st.write(f"**Model Used:** `alzheimers_model.pth`")
+            st.write(f"**Device:** CPU")
+
+            # Stylish Prediction Card
+            if predicted_class == 1:  # Alzheimer's Detected
+                st.error(f"🚨 Prediction: **{classes[predicted_class]}**\n\nConfidence: {probs[predicted_class]*100:.2f}%")
+            else:  # No Alzheimer's
+                st.success(f"✅ Prediction: **{classes[predicted_class]}**\n\nConfidence: {probs[predicted_class]*100:.2f}%")
+
+            st.write(f"**Alternative:** {classes[1-predicted_class]} ({probs[1-predicted_class]*100:.2f}%)")
+
+            # Warning if confidence is low
+            if probs[predicted_class]*100 < 70:
+                st.warning("⚠ Confidence < 70% → Prediction uncertain. Further scans recommended.")
+
+            # ----------------- PROBABILITY BARS -----------------
+            st.markdown("### 📊 Probability Scores")
+            st.progress(int(probs[0]*100))
+            st.write(f"🟢 No Alzheimer's: {probs[0]*100:.2f}%")
+            st.progress(int(probs[1]*100))
+            st.write(f"🔴 Alzheimer's Detected: {probs[1]*100:.2f}%")
+
+            # ----------------- DONUT CHART -----------------
+            st.markdown("### 🎯 Probability Distribution")
+            fig, ax = plt.subplots()
+            ax.pie(
+                probs,
+                labels=classes,
+                autopct='%1.1f%%',
+                startangle=90,
+                colors=["#4ade80", "#f87171"],
+                wedgeprops={'width': 0.4}
+            )
+            ax.axis('equal')
+            st.pyplot(fig)
+
+        except Exception as e:
+            st.error(f"❌ Error while processing file: {e}")
+
+
+
+
+
+1.python -m uvicorn api_server:app --host 127.0.0.1 --port 8010 --reload
+
+2.python -m http.server 5500 --directory "C:\Users\hp\Desktop\SEM5\Alzheimers-DL-Network-master\synapse-speak-scan-main"
+
+3.python -m streamlit run app.py --server.enableCORS false --server.enableXsrfProtection false --server.headless true
+
+
+
+
+
+python -m streamlit run app.py
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# app.py
+import streamlit as st
+import torch
+import nibabel as nib
+import numpy as np
+from model.network import Network
+from skimage.transform import resize
+import matplotlib.pyplot as plt
+import tempfile
+import datetime
+import time
+from io import BytesIO
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.utils import ImageReader
+from reportlab.lib import colors
+import random
+import os
+
+# ----------------- STREAMLIT PAGE CONFIG -----------------
+st.set_page_config(page_title="🧠 Alzheimer's Detection", layout="centered")
+st.title("🧠 Alzheimer's MRI Prediction System")
+st.write("Upload your MRI scan (.nii or .nii.gz), enter patient details, run prediction and download a professional PDF report.")
+
+# ----------------- MODEL PARAMETERS -----------------
+INPUT_CHANNELS = 1
+INPUT_SHAPE = (200, 200, 150)
+OUTPUT_SIZE = 2
+CLASSES = ["No Alzheimer's", "Alzheimer's Detected"]
+MODEL_FILENAME = "alzheimers_model.pth"  # ensure exists in project root
+
+# ----------------- LOAD MODEL (cached) -----------------
+@st.cache_resource
+def load_model(path=MODEL_FILENAME):
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"Model file not found at {path}. Place '{path}' in project folder.")
+    model = Network(INPUT_CHANNELS, INPUT_SHAPE, OUTPUT_SIZE)
+    model.load_state_dict(torch.load(path, map_location="cpu"))
+    model.eval()
+    return model
+
+try:
+    model = load_model()
+except Exception as e:
+    st.error(f"Error loading model: {e}")
+    st.stop()
+
+# ----------------- PATIENT INFO FORM -----------------
+st.markdown("### 🧾 Patient Information (fill before prediction)")
+col1, col2 = st.columns(2)
+with col1:
+    patient_name = st.text_input("👤 Patient Name")
+    patient_age = st.number_input("🎂 Age", min_value=0, max_value=120, step=1, value=50)
+with col2:
+    patient_id = st.text_input("🆔 Patient ID (leave blank to auto-generate)")
+    patient_contact = st.text_input("📞 Contact Number")
+patient_date = st.date_input("📅 Report Date", value=datetime.date.today())
+patient_notes = st.text_area("📝 Notes (optional)", placeholder="Any additional information (symptoms, clinical notes)...")
+
+if not patient_id:
+    # auto-generate a readable patient id if user leaves blank
+    patient_id = f"PID-{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}-{random.randint(100,999)}"
+
+# ----------------- FILE UPLOADER -----------------
+uploaded_file = st.file_uploader("📂 Upload MRI File (.nii, .nii.gz)", type=["nii", "nii.gz"])
+
+# Utility: prepare image/chart as PNG bytes
+def create_donut_chart_png(probs, classes=CLASSES):
+    fig, ax = plt.subplots(figsize=(3.5,3.5))
+    colors_list = ["#4ade80", "#f87171"]  # green, red
+    wedges, texts, autotexts = ax.pie(
+        probs,
+        labels=classes,
+        autopct='%1.1f%%',
+        startangle=90,
+        colors=colors_list,
+        wedgeprops={'width': 0.45, 'edgecolor':'white'}
+    )
+    ax.axis('equal')
+    plt.setp(autotexts, size=9, weight="bold", color="white")
+    buf = BytesIO()
+    plt.savefig(buf, format='png', bbox_inches='tight', dpi=150)
+    plt.close(fig)
+    buf.seek(0)
+    return buf
+
+# ----------------- PDF GENERATOR -----------------
+def build_pdf_bytes(patient_info, mri_filename, model_name, predicted_class, probs, chart_png_buf):
+    """
+    patient_info: dict with keys name, id, age, contact, date, notes
+    mri_filename: str
+    model_name: str
+    predicted_class: index (0 or 1)
+    probs: list or array of two floats summing to 1
+    chart_png_buf: BytesIO containing png image of donut chart
+    """
+    buffer = BytesIO()
+    PAGE_WIDTH, PAGE_HEIGHT = A4
+    c = canvas.Canvas(buffer, pagesize=A4)
+
+    # Top margin / header
+    y = PAGE_HEIGHT - 50
+    c.setFont("Helvetica-Bold", 18)
+    c.drawCentredString(PAGE_WIDTH / 2, y, "🧠 Alzheimer's Detection MRI Report")
+    c.setFont("Helvetica", 10)
+    y -= 18
+    c.drawCentredString(PAGE_WIDTH / 2, y, f"Generated on: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    y -= 20
+
+    # Blue line separator
+    c.setStrokeColorRGB(0/255, 102/255, 204/255)  # medium blue
+    c.setLineWidth(2)
+    c.line(40, y, PAGE_WIDTH - 40, y)
+    y -= 30
+
+    # Patient Information block (left side)
+    c.setFont("Helvetica-Bold", 12)
+    c.drawString(50, y, "Patient Information")
+    y -= 16
+    c.setFont("Helvetica", 10)
+    c.drawString(52, y, f"Name: {patient_info['name']}")
+    y -= 14
+    c.drawString(52, y, f"Patient ID: {patient_info['id']}")
+    y -= 14
+    c.drawString(52, y, f"Age: {patient_info['age']}")
+    y -= 14
+    c.drawString(52, y, f"Contact: {patient_info['contact']}")
+    y -= 14
+    c.drawString(52, y, f"Report Date: {patient_info['date']}")
+    y -= 16
+
+    if patient_info.get("notes"):
+        c.drawString(52, y, "Notes:")
+        y -= 12
+        text_obj = c.beginText(54, y)
+        text_obj.setFont("Helvetica", 9)
+        for line in str(patient_info["notes"]).splitlines():
+            text_obj.textLine(line)
+            y -= 12
+        c.drawText(text_obj)
+        y -= 6
+
+    # Blue separator
+    y -= 8
+    c.setStrokeColorRGB(0/255, 102/255, 204/255)
+    c.setLineWidth(1.5)
+    c.line(40, y, PAGE_WIDTH - 40, y)
+    y -= 26
+
+    # Prediction Results block
+    c.setFont("Helvetica-Bold", 12)
+    c.drawString(50, y, "Prediction Results")
+    y -= 16
+    c.setFont("Helvetica", 11)
+
+    # Predicted class text (big)
+    pred_text = CLASSES[predicted_class]
+    conf_text = f"{probs[predicted_class]*100:.2f}%"
+    # Use color for prediction label
+    if predicted_class == 1:
+        # Alzheimer's Detected -> red label box
+        c.setFillColorRGB(0.9, 0.2, 0.2)
+        c.rect(50, y-6, 220, 22, fill=1, stroke=0)
+        c.setFillColorRGB(1,1,1)
+        c.setFont("Helvetica-Bold", 11)
+        c.drawString(56, y+1, f"🚨 {pred_text}  — Confidence: {conf_text}")
+        c.setFillColorRGB(0,0,0)
+    else:
+        # No Alzheimer's -> green label box
+        c.setFillColorRGB(0.15, 0.6, 0.15)
+        c.rect(50, y-6, 220, 22, fill=1, stroke=0)
+        c.setFillColorRGB(1,1,1)
+        c.setFont("Helvetica-Bold", 11)
+        c.drawString(56, y+1, f"✅ {pred_text}  — Confidence: {conf_text}")
+        c.setFillColorRGB(0,0,0)
+    y -= 36
+
+    # Alternative class & details
+    alt_index = 1 - predicted_class
+    c.setFont("Helvetica", 10)
+    c.drawString(52, y, f"Alternative: {CLASSES[alt_index]}  ({probs[alt_index]*100:.2f}%)")
+    y -= 20
+    c.drawString(52, y, f"MRI File: {mri_filename}")
+    y -= 14
+    c.drawString(52, y, f"Model Used: {model_name}")
+    y -= 18
+
+    # Blue separator
+    c.setStrokeColorRGB(0/255, 102/255, 204/255)
+    c.setLineWidth(1.2)
+    c.line(40, y, PAGE_WIDTH - 40, y)
+    y -= 24
+
+    # Probability Bars + Donut chart image (draw on right)
+    c.setFont("Helvetica-Bold", 12)
+    c.drawString(50, y, "Probability Scores")
+    y -= 18
+    c.setFont("Helvetica", 10)
+
+    # Bars (left side)
+    bar_x = 52
+    bar_width_full = 260
+    bar_height = 12
+    # No Alzheimer's (green)
+    no_prob = probs[0]
+    c.setFillColorRGB(0.89, 0.95, 0.89)  # light green bg
+    c.rect(bar_x, y - bar_height, bar_width_full, bar_height, fill=1, stroke=0)
+    c.setFillColorRGB(0.18, 0.8, 0.18)  # green progress
+    c.rect(bar_x, y - bar_height, bar_width_full * no_prob, bar_height, fill=1, stroke=0)
+    c.setFillColorRGB(0,0,0)
+    c.drawString(bar_x + bar_width_full + 10, y - bar_height + 1, f"{no_prob*100:.2f}%")
+    y -= 24
+
+    # Alzheimer's (red)
+    alz_prob = probs[1]
+    c.setFillColorRGB(0.98, 0.9, 0.9)  # light red bg
+    c.rect(bar_x, y - bar_height, bar_width_full, bar_height, fill=1, stroke=0)
+    c.setFillColorRGB(0.9, 0.18, 0.18)  # red progress
+    c.rect(bar_x, y - bar_height, bar_width_full * alz_prob, bar_height, fill=1, stroke=0)
+    c.setFillColorRGB(0,0,0)
+    c.drawString(bar_x + bar_width_full + 10, y - bar_height + 1, f"{alz_prob*100:.2f}%")
+    y -= 40
+
+    # Embed donut chart image on right side
+    try:
+        img = ImageReader(chart_png_buf)
+        img_w = 180
+        img_h = 180
+        img_x = PAGE_WIDTH - 50 - img_w
+        img_y = y - img_h + 60  # align with bars block
+        c.drawImage(img, img_x, img_y, width=img_w, height=img_h)
+    except Exception as e:
+        # If image fails, continue quietly
+        pass
+
+    # Move down to give space
+    y -= 20
+    # Blue separator
+    c.setStrokeColorRGB(0/255, 102/255, 204/255)
+    c.line(40, y, PAGE_WIDTH - 40, y)
+    y -= 28
+
+    # Footer / Disclaimer
+    c.setFont("Helvetica", 9)
+    footer_text = ("Disclaimer: This is an AI-assisted prediction report intended for research/educational "
+                   "purposes only. It should not be used as a definitive medical diagnosis. "
+                   "Please consult a qualified medical professional for clinical decisions.")
+    text_obj = c.beginText(50, y)
+    text_obj.setFont("Helvetica", 9)
+    for line in footer_text.split(". "):
+        text_obj.textLine(line.strip() + ('.' if not line.endswith('.') else ''))
+    c.drawText(text_obj)
+
+    # finalize
+    c.showPage()
+    c.save()
+    buffer.seek(0)
+    return buffer
+
+# ----------------- PREDICTION FLOW -----------------
+if uploaded_file is not None:
+    st.success(f"✅ File uploaded: {uploaded_file.name}")
+
+    if st.button("🔍 Run Prediction"):
+        # 1) Simulate wait + show progress
+        with st.spinner("⏳ Processing MRI scan (this may take a few seconds)..."):
+            progress_bar = st.progress(0)
+            # simulate a small wait so UI feels realistic (but short)
+            for i in range(50):
+                time.sleep(0.02)
+                progress_bar.progress(int((i+1) * 100 / 50))
+
+        try:
+            # 2) Save uploaded file temporarily to disk (nibabel requires file path)
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".nii") as tmp_file:
+                tmp_file.write(uploaded_file.getbuffer())
+                tmp_path = tmp_file.name
+
+            # 3) Load MRI and preprocess
+            mri_img = nib.load(tmp_path)
+            mri_data = mri_img.get_fdata()
+            # Normalize
+            mri_data = (mri_data - np.min(mri_data)) / (np.max(mri_data) - np.min(mri_data) + 1e-8)
+            if mri_data.shape != INPUT_SHAPE:
+                st.warning(f"⚠ MRI shape {mri_data.shape} != expected {INPUT_SHAPE}. Resizing...")
+                mri_data = resize(mri_data, INPUT_SHAPE, anti_aliasing=True)
+
+            # 4) Convert to tensor and predict
+            mri_tensor = torch.tensor(mri_data, dtype=torch.float32).unsqueeze(0).unsqueeze(0)  # shape (1,1,D,H,W)
+            # Ensure model hidden state (if used) is reset (Network provides init_hidden)
+            try:
+                model.hidden = model.init_hidden(batch_size=1)
+            except Exception:
+                pass
+
+            with torch.no_grad():
+                out = model(mri_tensor)
+                # make sure out is 1D
+                out = out.squeeze()
+                probs = torch.softmax(out, dim=0).cpu().numpy()
+                predicted_class = int(np.argmax(probs))
+
+            # 5) Show results on page (stylish)
+            st.markdown("## 📋 Prediction Report")
+            st.markdown(f"**👤 Patient Name:** {patient_name if patient_name else 'N/A'}  ")
+            st.markdown(f"**🆔 Patient ID:** {patient_id}  ")
+            st.markdown(f"**🎂 Age:** {patient_age}  ")
+            st.markdown(f"**📞 Contact:** {patient_contact if patient_contact else 'N/A'}  ")
+            st.markdown(f"**📅 Date:** {patient_date}  ")
+            if patient_notes:
+                st.markdown(f"**📝 Notes:** {patient_notes}  ")
+
+            st.info(f"**Patient MRI File:** {uploaded_file.name}")
+            st.write(f"**Model Used:** `{MODEL_FILENAME}`")
+            st.write(f"**Device:** CPU")
+
+            # Stylish result card
+            if predicted_class == 1:
+                st.error(f"🚨 Prediction: **{CLASSES[predicted_class]}**   — Confidence: {probs[predicted_class]*100:.2f}%")
+            else:
+                st.success(f"✅ Prediction: **{CLASSES[predicted_class]}**   — Confidence: {probs[predicted_class]*100:.2f}%")
+            st.write(f"**Alternative:** {CLASSES[1-predicted_class]} ({probs[1-predicted_class]*100:.2f}%)")
+
+            if probs[predicted_class]*100 < 70:
+                st.warning("⚠ Confidence < 70% → Prediction uncertain. Please consider further scans or expert review.")
+
+            # Show progress bars and donut chart on page
+            st.markdown("### 📊 Probability Scores")
+            st.progress(int(probs[0]*100))
+            st.write(f"🟢 No Alzheimer's: {probs[0]*100:.2f}%")
+            st.progress(int(probs[1]*100))
+            st.write(f"🔴 Alzheimer's Detected: {probs[1]*100:.2f}%")
+
+            st.markdown("### 🎯 Probability Distribution")
+            donut_buf = create_donut_chart_png(probs)
+            # display donut chart in page
+            st.image(donut_buf, width=260, caption="Probability distribution")
+
+            # 6) Create PDF bytes (in memory) and provide a download button
+            patient_info = {
+                "name": patient_name or "N/A",
+                "id": patient_id,
+                "age": patient_age,
+                "contact": patient_contact or "N/A",
+                "date": str(patient_date),
+                "notes": patient_notes or ""
+            }
+
+            pdf_buffer = build_pdf_bytes(patient_info, uploaded_file.name, MODEL_FILENAME, predicted_class, probs, donut_buf)
+
+            # Reset buffer position
+            pdf_buffer.seek(0)
+            # Download button
+            st.download_button(
+                label="📥 Download Professional PDF Report",
+                data=pdf_buffer,
+                file_name=f"alzheimers_report_{patient_id}.pdf",
+                mime="application/pdf"
+            )
+
+        except Exception as e:
+            st.error(f"❌ Error during processing: {e}")
+        finally:
+            # cleanup temporary file
+            try:
+                if 'tmp_path' in locals() and os.path.exists(tmp_path):
+                    os.remove(tmp_path)
+            except Exception:
+                pass
+
