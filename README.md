@@ -1,29 +1,34 @@
-﻿# Alzheimer MRI Prediction
+# Alzheimer MRI Prediction
 
-🔍 Overview
+### 🔍 Overview
 
 The Alzheimer’s MRI Prediction System is an AI-based web application that predicts the stage of Alzheimer’s Disease using MRI brain scans.
 This system integrates Deep Learning, FastAPI, and a React-based frontend for smooth interaction and accurate medical insights.
 
 The goal of this project is to help researchers and healthcare professionals analyze MRI images efficiently and predict the likelihood of Mild Cognitive Impairment (MCI) progressing to Alzheimer’s Disease (AD).
 
-⚙️ Tech Stack
-🧩 Backend:
+---
 
-Python (FastAPI) — REST API framework for handling requests
-PyTorch — For model loading and MRI prediction
-Nibabel — To process .nii MRI files
-scikit-image, matplotlib, reportlab — For image processing and PDF reporting
-Uvicorn — ASGI server for running FastAPI
+### ⚙️ Tech Stack
 
-💻 Frontend:
+#### 🧩 Backend:
+- **Python (FastAPI)** — REST API framework for handling requests
+- **PyTorch** — For model loading and MRI prediction
+- **Nibabel** — To process `.nii` MRI files
+- **scikit-image, matplotlib, reportlab** — For image processing and PDF reporting
+- **Uvicorn** — ASGI server for running FastAPI
 
-React + TypeScript (in folder: synapse-speak-scan-main/)
-TailwindCSS — For modern and responsive UI design
-Vite — Frontend build tool
-ShadCN UI components — For clean and professional interface
+#### 💻 Frontend:
+- **React + TypeScript** (in folder: `synapse-speak-scan-main/`)
+- **TailwindCSS** — For modern and responsive UI design
+- **Vite** — Frontend build tool
+- **ShadCN UI components** — For clean and professional interface
 
-📁 Project Structure
+---
+
+### 📁 Project Structure
+
+```text
 Alzheimers-DL-Network-master/
 │
 ├── app.py                     # Streamlit or app entry (if any)
@@ -45,11 +50,20 @@ Alzheimers-DL-Network-master/
 ├── data_sample/               # Example MRI dataset
 ├── requirements.txt           # Python dependencies
 └── README.md                  # Project documentation
+```
 
-🚀 How to Run Locally
-1️⃣ Clone the Repository
+---
 
-2️⃣ Setup Backend (FastAPI)
+### 🚀 How to Run Locally
+
+#### 1️⃣ Clone the Repository
+```bash
+git clone https://github.com/zoyashaikh3/Alzheimer-Disease-Detection.git
+cd Alzheimer-Disease-Detection
+```
+
+#### 2️⃣ Setup Backend (FastAPI)
+```bash
 # Create virtual environment (optional but recommended)
 python -m venv env
 env\Scripts\activate   # for Windows
@@ -59,50 +73,62 @@ pip install -r requirements.txt
 
 # Run FastAPI backend
 uvicorn api_server:app --reload
-
+```
 
 ✅ The backend will start at:
-👉 http://127.0.0.1:8010
+👉 `http://127.0.0.1:8010`
 
-3️⃣ Setup Frontend (React)
+#### 3️⃣ Setup Frontend (React)
+```bash
 cd synapse-speak-scan-main
 npm install
 npm run dev
-
+```
 
 ✅ The frontend will start at:
-👉 http://localhost:5500
- or http://localhost:5173
- (depending on Vite config)
+👉 `http://localhost:5500` or `http://localhost:5173` (depending on Vite config)
 
-🧩 How It Works
+---
 
-Upload an MRI (.nii) file from the web interface.
-The frontend sends the file to the FastAPI backend via REST API.
-The model processes the MRI and predicts the brain condition:
-MCI to AD (progressing to Alzheimer’s)
-MCI to MCI (stable mild cognitive impairment)
-The result is displayed on the web dashboard.
+### 🧩 How It Works
 
-📊 Example Output
-MRI Input	Predicted Output	Confidence
-Brain Scan #1	MCI → AD	92.5%
-Brain Scan #2	MCI → MCI	87.3%
-📦 Requirements
+1. Upload an MRI (`.nii`) file from the web interface.
+2. The frontend sends the file to the FastAPI backend via REST API.
+3. The model processes the MRI and predicts the brain condition:
+   - **MCI to AD** (progressing to Alzheimer’s)
+   - **MCI to MCI** (stable mild cognitive impairment)
+4. The result is displayed on the web dashboard.
 
-All dependencies are listed in requirements.txt.
-You can install them using:
+---
 
+### 📊 Example Output
+
+| MRI Input | Predicted Output | Confidence |
+| :--- | :--- | :--- |
+| Brain Scan #1 | MCI → AD | 92.5% |
+| Brain Scan #2 | MCI → MCI | 87.3% |
+
+---
+
+### 📦 Requirements
+
+All dependencies are listed in `requirements.txt`. You can install them using:
+
+```bash
 pip install -r requirements.txt
+```
 
+---
 
-🛠️ Future Improvements
+### 🛠️ Future Improvements
 
-Deploy the model on cloud (Render / Hugging Face Spaces / AWS)
-Add patient report download (PDF summary)
-Integrate real-time MRI visualization
-Enhance model accuracy with larger datasets
+- Deploy the model on cloud (Render / Hugging Face Spaces / AWS)
+- Add patient report download (PDF summary)
+- Integrate real-time MRI visualization
+- Enhance model accuracy with larger datasets
 
-📜 License
-This project is open-source and available under the MIT License.
-Feel free to use, modify, and share.
+---
+
+### 📜 License
+
+This project is open-source and available under the MIT License. Feel free to use, modify, and share.
